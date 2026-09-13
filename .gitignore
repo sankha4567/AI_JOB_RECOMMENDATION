@@ -22,7 +22,8 @@ jobs_cache/
 chroma_db/
 
 
-
+uploads/*
+!uploads/.gitkeep
 # IDE
 .vscode/
 .idea/
