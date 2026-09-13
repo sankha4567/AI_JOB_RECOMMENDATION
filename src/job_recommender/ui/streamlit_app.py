@@ -74,6 +74,38 @@ with st.sidebar:
         "and large-language model reasoning to surface the best-fit roles for you."
     )
 
+    st.divider()
+    st.markdown("### 🗄️ Job Database")
+
+    # Show current job count
+    try:
+        from job_recommender.core.vector_store import VectorStore
+        _vs = VectorStore()
+        _count = _vs.count()
+        if _count > 0:
+            st.success(f"✅ {_count:,} jobs indexed")
+        else:
+            st.warning("⚠️ Database is empty")
+    except Exception:
+        st.error("Could not connect to DB")
+        _count = 0
+
+    if st.button("🔄 Sync Jobs from API", use_container_width=True,
+                 help="Fetches latest jobs from Arbeitnow and indexes them into ChromaDB. Takes ~3–5 min."):
+        from job_recommender.services.job_indexer import JobIndexer
+        with st.spinner("Syncing jobs… this takes 3–5 minutes ⏳"):
+            try:
+                result = JobIndexer().sync()
+                st.success(
+                    f"✅ Sync complete!  "
+                    f"Added **{result.added}** · Updated **{result.updated}** · "
+                    f"Skipped **{result.skipped}**  \n"
+                    f"Total in DB: **{result.total_in_db:,}**"
+                )
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Sync failed: {exc}")
+
 
 # ---------------------------------------------------------------------------
 # Main content
