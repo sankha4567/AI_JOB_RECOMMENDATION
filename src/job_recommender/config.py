@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     google_api_key: str = Field(..., alias="GOOGLE_API_KEY")
 
     llm_model: str = Field(
-        default="gemini-2.0-flash",
+        default="gemini-3.5-flash-lite",
         alias="LLM_MODEL",
     )
 
