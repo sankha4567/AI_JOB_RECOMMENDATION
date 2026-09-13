@@ -1,58 +1,74 @@
-import os
-from dotenv import load_dotenv
+"""
+Application configuration using pydantic-settings.
 
-load_dotenv()
+All settings are loaded from environment variables (or .env file).
+Use `get_settings()` to obtain a cached singleton instance.
+"""
 
-# ==============================
-# Gemini Configuration
-# ==============================
+from functools import lru_cache
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-LLM_MODEL = "gemini-3.5-flash"
 
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+class Settings(BaseSettings):
+    """
+    Validated, type-safe application settings.
 
-# ==============================
-# Chroma Configuration
-# ==============================
+    Values are resolved in priority order:
+    environment variables > .env file > field defaults.
+    """
 
-CHROMA_PATH = "chroma_db"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
-COLLECTION_NAME = "ai_jobs"
+    # ------------------------------------------------------------------
+    # Gemini / LLM
+    # ------------------------------------------------------------------
+    google_api_key: str = Field(..., alias="GOOGLE_API_KEY")
 
-TOP_K_RESULTS = 20
+    llm_model: str = Field(
+        default="gemini-3.5-flash-lite",
+        alias="LLM_MODEL",
+    )
 
-FETCH_K_RESULTS = 50
+    embedding_model: str = Field(
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        alias="EMBEDDING_MODEL",
+    )
 
-# ==============================
-# Resume
-# ==============================
+    # ------------------------------------------------------------------
+    # ChromaDB
+    # ------------------------------------------------------------------
+    chroma_path: str = Field(default="chroma_db", alias="CHROMA_PATH")
 
-UPLOAD_FOLDER = "uploads"
+    collection_name: str = Field(default="ai_jobs", alias="COLLECTION_NAME")
 
-RESUME_PATH = os.path.join(
-    UPLOAD_FOLDER,
-    "resume.pdf"
-)
+    top_k_results: int = Field(default=20, alias="TOP_K_RESULTS")
 
-# ==============================
-# Cache
-# ==============================
+    fetch_k_results: int = Field(default=50, alias="FETCH_K_RESULTS")
 
-CACHE_FOLDER = "jobs_cache"
+    # ------------------------------------------------------------------
+    # File paths
+    # ------------------------------------------------------------------
+    upload_folder: str = Field(default="uploads", alias="UPLOAD_FOLDER")
 
-JOB_CACHE = os.path.join(
-    CACHE_FOLDER,
-    "jobs.json"
-)
+    cache_folder: str = Field(default="jobs_cache", alias="CACHE_FOLDER")
 
-# ==============================
-# Job API
-# ==============================
+    # ------------------------------------------------------------------
+    # Job API
+    # ------------------------------------------------------------------
+    jobs_per_page: int = Field(default=100, alias="JOBS_PER_PAGE")
 
-JOBS_PER_PAGE = 100
+    max_pages: int = Field(default=10, alias="MAX_PAGES")
 
-MAX_PAGES = 10
+    request_timeout: int = Field(default=30, alias="REQUEST_TIMEOUT")
 
-REQUEST_TIMEOUT = 30
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return a cached singleton Settings instance."""
+    return Settings()

@@ -1,4 +1,8 @@
-PROFILE_EXTRACTION_PROMPT = """
+"""
+LLM prompt templates used throughout the application.
+"""
+
+PROFILE_EXTRACTION_PROMPT: str = """
 You are an expert technical recruiter.
 
 Your task is to analyze the resume and extract structured candidate information.
@@ -33,8 +37,7 @@ Resume:
 {resume}
 """
 
-
-JOB_RANKING_PROMPT = """
+JOB_RANKING_PROMPT: str = """
 You are an experienced AI Technical Recruiter.
 
 You are given:
@@ -52,12 +55,12 @@ Retrieved Jobs
 
 Tasks:
 
-1. Rank the jobs from best to worst.
-2. Calculate a realistic match percentage.
-3. Explain why each job matches.
-4. Mention missing skills.
+1. Rank the jobs from best to worst match.
+2. Calculate a realistic match percentage (0–100).
+3. Explain why each job matches the candidate.
+4. List any skills the candidate is missing for the role.
 5. Recommend whether the candidate should apply.
-6. Suggest one learning topic for every missing skill.
+6. Suggest one focused learning topic per missing skill.
 
 Return ONLY valid JSON.
 
@@ -69,6 +72,7 @@ Schema:
             "title": "",
             "company": "",
             "location": "",
+            "url": "",
             "match_percentage": 0,
             "reason": "",
             "missing_skills": [],
@@ -83,7 +87,7 @@ Rules:
 - Return only JSON.
 - No markdown.
 - No explanations outside JSON.
-- Match percentage should be between 0 and 100.
-- Sort recommendations in descending order of match percentage.
+- Match percentage must be between 0 and 100.
+- Sort recommendations in descending order of match_percentage.
 - Include only the top 10 jobs.
 """
