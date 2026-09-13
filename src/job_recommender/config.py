@@ -1,14 +1,41 @@
 """
 Application configuration using pydantic-settings.
 
-All settings are loaded from environment variables (or .env file).
+Priority order for secrets:
+  1. Streamlit Cloud  → st.secrets   (injected into os.environ at startup)
+  2. Local / CI       → os.environ / .env file
+
 Use `get_settings()` to obtain a cached singleton instance.
 """
 
+import os
 from functools import lru_cache
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _inject_streamlit_secrets() -> None:
+    """
+    Bridge Streamlit Cloud secrets into os.environ so pydantic-settings
+    can read them like regular environment variables.
+
+    On Streamlit Cloud, secrets defined in the dashboard are accessible via
+    ``st.secrets`` but are NOT automatically placed in ``os.environ``.
+    This function does that mapping once at startup.
+
+    When running locally (where ``streamlit`` may not be imported or
+    ``st.secrets`` is empty / unavailable), this is a silent no-op.
+    """
+    try:
+        import streamlit as st  # noqa: PLC0415
+
+        for key, value in st.secrets.items():
+            if key not in os.environ:
+                os.environ[key] = str(value)
+    except Exception:  # noqa: BLE001
+        # Not running on Streamlit, or secrets not configured — that's fine.
+        pass
 
 
 class Settings(BaseSettings):
@@ -16,7 +43,7 @@ class Settings(BaseSettings):
     Validated, type-safe application settings.
 
     Values are resolved in priority order:
-    environment variables > .env file > field defaults.
+    Streamlit secrets → environment variables → .env file → field defaults.
     """
 
     model_config = SettingsConfigDict(
@@ -31,7 +58,7 @@ class Settings(BaseSettings):
     google_api_key: str = Field(..., alias="GOOGLE_API_KEY")
 
     llm_model: str = Field(
-        default="gemini-3.5-flash-lite",
+        default="gemini-2.0-flash",
         alias="LLM_MODEL",
     )
 
@@ -70,5 +97,11 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Return a cached singleton Settings instance."""
+    """
+    Return a cached singleton Settings instance.
+
+    Streamlit secrets are injected into os.environ before the first
+    Settings() call so pydantic-settings can resolve them correctly.
+    """
+    _inject_streamlit_secrets()
     return Settings()
